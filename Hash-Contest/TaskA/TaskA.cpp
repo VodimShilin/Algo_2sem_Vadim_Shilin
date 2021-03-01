@@ -4,8 +4,6 @@
 
 long long length = 1'000'000;
 
-std::vector<char> letters = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-
 int hash(const std::string& s, const std::vector<std::pair<std::string, long long>>& table) {
 	long long pos = 0;
 	for (size_t i = 0; i + 1 < std::min(30U, s.size()); ++i) {
