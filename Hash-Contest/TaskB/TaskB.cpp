@@ -1,10 +1,10 @@
 ﻿#include <iostream>
 #include <vector>
 
-long long length = 3'000'000;
+#define LENGTH 3'000'000
 
 long long hash(long long x, std::vector<std::pair<long long, long long>>& table) {
-    long long pos = ((x % 471249) * 2143 + 234521) % length;
+    long long pos = ((x % 471249) * 2143 + 234521) % LENGTH;
     while (table[pos].first != x && table[pos].first != -1) { ++pos; }
     return pos;
 }
@@ -19,7 +19,10 @@ long long hash_table(long long x, std::vector<std::pair<long long, long long>>& 
 }
 
 int main() {
-	std::vector<std::pair<long long, long long>> table(length, {-1, -1});
+    std::ios_base::sync_with_stdio(false);
+    std::cin.tie(nullptr);
+    std::cout.tie(nullptr);
+	std::vector<std::pair<long long, long long>> table(LENGTH, {-1, -1});
 	int n;
 	std::cin >> n;
 	long long x, y;
