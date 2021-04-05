@@ -18,7 +18,9 @@ int main() {
     for (int i = 0; i < n; ++i) {
         for (int j = 0; j < s; ++j) {
             if (i + 1 <= n) dp[j][i + 1] = std::max(dp[j][i + 1], dp[j][i]);
-            if (i + 1 <= n && j + weights[i + 1] <= s) dp[j + weights[i + 1]][i + 1] = std::max(dp[j + weights[i + 1]][i + 1], dp[j][i] + weights[i + 1]);
+            if (i + 1 <= n && j + weights[i + 1] <= s) {
+		    dp[j + weights[i + 1]][i + 1] = std::max(dp[j + weights[i + 1]][i + 1], dp[j][i] + weights[i + 1]);
+	    }
         }
     }
     long long k = 0;
