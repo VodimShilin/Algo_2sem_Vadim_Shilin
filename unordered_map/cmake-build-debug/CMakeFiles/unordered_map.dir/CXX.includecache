@@ -6,25 +6,25 @@
 
 #IncludeRegexTransform: 
 
-/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/fastallocator.h
+/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/main.cpp
+vector
+-
+string
+-
+unordered_map
+-
+iterator
+-
+cassert
+-
+unordered_map.h
+/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/unordered_map.h
+
+/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/unordered_map.h
 iostream
 -
 type_traits
 -
-list
--
 vector
 -
-
-/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/main.cpp
-iostream
--
-unordered_map.h
-/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/unordered_map.h
-string
--
-
-/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/unordered_map.h
-fastallocator.h
-/home/vadim/Algo_2sem_Vadim_Shilin/unordered_map/fastallocator.h
 

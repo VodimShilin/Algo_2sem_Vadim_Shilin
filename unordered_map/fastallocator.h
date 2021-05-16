@@ -1,6 +1,5 @@
 #include <iostream>
 #include <type_traits>
-#include <list>
 #include <vector>
 
 template <typename T>
@@ -98,13 +97,15 @@ public:
 
 template <typename T, typename Allocator = std::allocator<T>>
 class List {
-private:
+protected:
     size_t _size = 0;
 
     struct Node {
         Node() = default;
         Node(const T& value): value(value) {}
+        Node(T&& value) noexcept: value(std::move(value)) {}
         Node(const T& value, Node* prev): value(value), prev(prev) {}
+        Node(T&& value, Node* prev) noexcept: value(std::move(value)), prev(prev) {}
         T value = T();
         Node* prev = nullptr;
         Node* next = nullptr;
@@ -130,14 +131,18 @@ private:
             return *this;
         }
 
-        operator common_iterator<true, const T>() {
+        operator common_iterator<true, const T>() const {
             return common_iterator<true, const T>(ptr);
         }
 
-        std::conditional_t<isConst, const U&, U&> operator*() {
+        explicit operator common_iterator<false, T>() {
+            return common_iterator<false, T>(ptr);
+        }
+
+        std::conditional_t<isConst, const U&, U&> operator*() const {
             return ptr->value;
         }
-        std::conditional_t<isConst, const U*, U*> operator->() {
+        std::conditional_t<isConst, const U*, U*> operator->() const {
             return &(ptr->value);
         }
 
@@ -175,7 +180,8 @@ private:
     //Allocator exact_allocator;
 public:
     using value_type = T;
-    using allocator_type = std::allocator_traits<typename std::allocator_traits<Allocator>::template rebind_alloc<Node>>;
+    using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<Node>;
+    using AllocTraits = std::allocator_traits<allocator_type>;
     using size_type = size_t;
     using reference = value_type&;
     using const_reference = const value_type&;
@@ -188,22 +194,38 @@ public:
     using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
     explicit List() {
-        _end = allocator_type::allocate(allocator, 1);
-//        _end = allocator.allocate(1);
+        _end = AllocTraits::allocate(allocator, 1);
         _begin = _end;
         _end->prev = _begin;
         _end->next = _begin;
     }
 
     List(size_t count, const T& value): _size(count) {
-        _end = allocator.allocate(1);
+        _end = AllocTraits::allocate(allocator, 1);
         _begin = _end;
         _end->prev = _begin;
         _end->next = _begin;
         Node* prev = _begin;
         for (size_t i = 0; i < count; ++i) {
-            Node* new_node = allocator.allocate(1);
-            allocator.construct(new_node, value);
+            Node* new_node = AllocTraits::allocate(allocator, 1);
+            AllocTraits::construct(allocator, new_node, value);
+            new_node->prev = prev;
+            prev->next = new_node;
+            prev = new_node;
+        }
+        prev->next = _end;
+        _end->prev = prev;
+        _begin = _end->next;
+    }
+    List(size_t count, T&& value): _size(count) {
+        _end = AllocTraits::allocate(allocator, 1);
+        _begin = _end;
+        _end->prev = _begin;
+        _end->next = _begin;
+        Node* prev = _begin;
+        for (size_t i = 0; i < count; ++i) {
+            Node* new_node = AllocTraits::allocate(allocator, 1);
+            AllocTraits::construct(allocator, new_node, std::move(value));
             new_node->prev = prev;
             prev->next = new_node;
             prev = new_node;
@@ -214,14 +236,14 @@ public:
     }
 
     List(size_t count): _size(count) {
-        _end = allocator.allocate(1);
+        _end = AllocTraits::allocate(allocator, 1);
         _begin = _end;
         _end->prev = _begin;
         _end->next = _begin;
         Node* prev = _begin;
         for (size_t i = 0; i < count; ++i) {
-            Node* new_node = allocator.allocate(1);
-            allocator.construct(new_node);
+            Node* new_node = AllocTraits::allocate(allocator, 1);
+            AllocTraits::construct(allocator, new_node);
             new_node->prev = prev;
             prev->next = new_node;
             prev = new_node;
@@ -231,9 +253,8 @@ public:
         _begin = _end->next;
     }
 
-    List(const List& another) {
-        allocator = allocator_type::select_on_container_copy_construction(another.allocator);
-        _end = allocator.allocate(1);
+    List(const List& another): allocator(AllocTraits::select_on_container_copy_construction(another.allocator)) {
+        _end = AllocTraits::allocate(allocator, 1);
         _begin = _end;
         _end->prev = _begin;
         _end->next = _begin;
@@ -243,25 +264,19 @@ public:
     }
 
     List(List&& another) noexcept {
-        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::allocator_type::propagate_on_container_move_assignment>) {
+        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::AllocTraits::propagate_on_container_move_assignment>) {
             allocator = another.allocator;
         } else {
             allocator = Allocator();
         }
         _size = another._size;
-        _end = allocator.allocate(1);
-        if (another._size) {
-            another._size = 0;
-            _begin = another._begin;
-            _end->next = _begin;
-            _end->prev = another._end->prev;
-            _end->prev->next = _end;
-            _begin->prev = _end;
-        } else {
-            _begin = _end;
-            _begin->prev = _end;
-            _end->next = _begin;
-        }
+        _end = another._end;
+        _begin = another._begin;
+        another._end = AllocTraits::allocate(allocator, 1);
+        another._begin = another._end;
+        another._end->next = another._begin;
+        another._begin->prev = another._end;
+        another._size = 0;
     }
 
     List& operator=(const List& another) {
@@ -270,11 +285,11 @@ public:
         while ( it != end()) {
             erase(it++);
         }
-        allocator.deallocate(_end, 1);
-        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::allocator_type::propagate_on_container_copy_assignment>) {
+        AllocTraits::deallocate(allocator, _end, 1);
+        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::AllocTraits::propagate_on_container_copy_assignment>) {
             allocator = another.allocator;
         }
-        _end = allocator.allocate(1);
+        _end = AllocTraits::allocate(allocator, 1);
         _begin = _end;
         _end->prev = _begin;
         _end->next = _begin;
@@ -291,29 +306,23 @@ public:
         while ( it != end()) {
             erase(it++);
         }
-        allocator.deallocate(_end, 1);
-        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::allocator_type::propagate_on_container_move_assignment>) {
+        AllocTraits::deallocate(allocator, _end, 1);
+        if constexpr (std::is_base_of_v<std::true_type, typename List<T, Allocator>::AllocTraits::propagate_on_container_move_assignment>) {
             allocator = another.allocator;
         }
         _size = another._size;
-        _end = allocator.allocate(1);
-        if (another._size) {
-            another._size = 0;
-            _begin = another._begin;
-            _end->next = _begin;
-            _end->prev = another._end->prev;
-            _end->prev->next = _end;
-            _begin->prev = _end;
-        } else {
-            _begin = _end;
-            _begin->prev = _end;
-            _end->next = _begin;
-        }
+        _end = another._end;
+        _begin = another._begin;
+        another._end = AllocTraits::allocate(allocator, 1);
+        another._begin = another._end;
+        another._end->next = another._begin;
+        another._begin->prev = another._end;
+        another._size = 0;
     }
 
     iterator insert(const_iterator iter, const T& value) {
-        Node* tmp = allocator.allocate(1);
-        allocator.construct(tmp, value);
+        Node* tmp = AllocTraits::allocate(allocator, 1);
+        AllocTraits::construct(allocator, tmp, value);
         tmp->next = iter.ptr;
         tmp->prev = iter.ptr->prev;
         tmp->prev->next = tmp;
@@ -322,8 +331,8 @@ public:
         return iterator(tmp->prev);
     }
     iterator insert(const_iterator iter, T&& value) {
-        Node* tmp = allocator.allocate(1);
-        allocator.construct(tmp, std::move(value));
+        Node* tmp = AllocTraits::allocate(allocator, 1);
+        AllocTraits::construct(allocator, tmp, std::move(value));
         tmp->next = iter.ptr;
         tmp->prev = iter.ptr->prev;
         tmp->prev->next = tmp;
@@ -334,8 +343,8 @@ public:
 
     template <typename... Args>
     iterator emplace(const_iterator iter, Args&&... args) {
-        Node* tmp = allocator.allocate(1);
-        allocator.construct(tmp, std::forward<Args>(args)...);
+        Node* tmp = AllocTraits::allocate(allocator, 1);
+        AllocTraits::construct(allocator, tmp, std::forward<Args>(args)...);
         tmp->next = iter.ptr;
         tmp->prev = iter.ptr->prev;
         tmp->prev->next = tmp;
@@ -351,8 +360,8 @@ public:
         }
         iter.ptr->prev->next = iter.ptr->next;
         iter.ptr->next->prev = iter.ptr->prev;
-        allocator.destroy(iter.ptr);
-        allocator.deallocate(iter.ptr, 1);
+        AllocTraits::destroy(allocator, iter.ptr);
+        AllocTraits::deallocate(allocator, iter.ptr, 1);
         --_size;
         _begin = to_be_begin;
     }
@@ -444,6 +453,6 @@ public:
             erase(it++);
 //            it = new_it;
         }
-        allocator.deallocate(_end, 1);
+        AllocTraits::deallocate(allocator, _end, 1);
     }
 };

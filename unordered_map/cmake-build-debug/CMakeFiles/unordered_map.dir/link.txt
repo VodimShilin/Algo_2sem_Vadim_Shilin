@@ -1,1 +1,1 @@
-/usr/bin/c++ -g CMakeFiles/unordered_map.dir/main.cpp.o -o unordered_map 
+/usr/bin/c++ -g -Wall -Wextra -Werror -o2 --verbose CMakeFiles/unordered_map.dir/main.cpp.o -o unordered_map 
