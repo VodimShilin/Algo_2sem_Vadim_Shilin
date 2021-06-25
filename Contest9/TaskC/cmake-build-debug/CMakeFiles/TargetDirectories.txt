@@ -1,0 +1,3 @@
+/home/vadim/Algo_2sem_Vadim_Shilin/Contest9/TaskC/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/vadim/Algo_2sem_Vadim_Shilin/Contest9/TaskC/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/vadim/Algo_2sem_Vadim_Shilin/Contest9/TaskC/cmake-build-debug/CMakeFiles/TaskC.dir

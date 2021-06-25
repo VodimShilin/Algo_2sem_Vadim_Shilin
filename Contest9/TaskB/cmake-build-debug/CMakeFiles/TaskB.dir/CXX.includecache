@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/vadim/Algo_2sem_Vadim_Shilin/Contest9/TaskB/main.cpp
+iostream
+-
+vector
+-
+string
+-
+queue
+-
+deque
+-
+algorithm
+-
+
