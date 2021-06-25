@@ -1,8 +1,0 @@
-cmake_minimum_required(VERSION 3.19)
-project(unordered_map)
-
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -Wall -Wextra -Werror -o2 --verbose")
-
-set(CMAKE_CXX_STANDARD 20)
-
-add_executable(unordered_map main.cpp unordered_map.h fastallocator.h)
