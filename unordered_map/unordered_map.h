@@ -534,7 +534,7 @@ private:
         Node(NodeType&& x, uint64_t cached) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.first)), std::move(x.second))), cached(cached) {}
         Node(NodeType&& x) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.first)), std::move(x.second))) {}
         Node(const Node& x): data(x.data), cached(x.cached) {}
-        Node(Node&& x): data(std::make_pair(const_cast<Key&&>(std::move(x.data.first)), std::move(x.data.second))), cached(x.cached) {
+        Node(Node&& x) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.data.first)), std::move(x.data.second))), cached(x.cached) {
             x.cached = 0;
         }
         NodeType data;
@@ -678,7 +678,7 @@ public:
         */
         Node* x = AllocTraits::allocate(_allocator, 1);
         std::allocator_traits<Alloc>::construct(_NTallocator, &(x->data), std::forward<Args>(args)...);
-        x->cached = x->cached % _bucket_count;
+        x->cached = Hash()(x->data.first) % _buckets.size();
         auto to_return = insert(std::move(*x));
         AllocTraits::destroy(_allocator, x);
         AllocTraits::deallocate(_allocator, x, 1);
