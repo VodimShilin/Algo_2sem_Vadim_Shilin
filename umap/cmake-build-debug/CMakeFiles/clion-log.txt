@@ -1,1 +1,0 @@
-CMakeLists.txt not found in /home/vadim/Algo_2sem_Vadim_Shilin/umap Select CMakeLists.txt
