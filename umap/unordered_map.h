@@ -631,7 +631,6 @@ public:
             it = _buckets[current_hash];
         else
             return {it, false};
-
         if (it == _list.end()) {
             _list.push_back(value);
             _buckets[current_hash] = --_list.end();
@@ -653,7 +652,6 @@ public:
             it = _buckets[current_hash];
         else
             return {it, false};
-
         if (it == _list.end()) {
             _list.push_back(std::move(value));
             _buckets[current_hash] = --_list.end();
