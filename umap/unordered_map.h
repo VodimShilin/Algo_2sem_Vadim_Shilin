@@ -2,6 +2,11 @@
 #include <type_traits>
 #include <vector>
 
+template <typename T>
+class C {
+public:
+    C(T) = delete;
+};
 
 template <size_t chunkSize>
 class FixedAllocator {
@@ -172,6 +177,7 @@ protected:
     };
 
     typename std::allocator_traits<Allocator>::template rebind_alloc<Node> allocator;
+    //Allocator exact_allocator;
 public:
     using value_type = T;
     using allocator_type = typename std::allocator_traits<Allocator>::template rebind_alloc<Node>;
@@ -443,7 +449,10 @@ public:
     ~List() {
         iterator it = begin();
         while ( it != end()) {
+//            iterator new_it = it;
+//            ++new_it;
             erase(it++);
+//            it = new_it;
         }
         AllocTraits::deallocate(allocator, _end, 1);
     }
@@ -521,6 +530,7 @@ public:
 private:
     struct Node {
         Node(const NodeType& x, uint64_t cached): data(x), cached(cached) {}
+        //Node(std::pair<Key, Value>&& x) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.first)), std::move(x.second))) {}
         Node(NodeType&& x, uint64_t cached) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.first)), std::move(x.second))), cached(cached) {}
         Node(NodeType&& x) noexcept: data(std::make_pair(const_cast<Key&&>(std::move(x.first)), std::move(x.second))) {}
         Node(const Node& x): data(x.data), cached(x.cached) {}
@@ -572,6 +582,7 @@ public:
     using Iterator = iterator;
     using ConstIterator = const_iterator;
     void rehash(int64_t new_size) {
+        //if (new_size == max_size()) return;
         UnorderedMap<Key, Value, Hash, Equal, Alloc> new_map(new_size, _max_load_factor);
         for (auto it = _list.begin(); it != _list.end(); ++it) {
             new_map.insert(std::move(*it));
@@ -615,12 +626,43 @@ public:
             rehash(_buckets.size());
         uint64_t current_hash = Hash()(value.first) % _buckets.size();
         return insert(Node(value, current_hash));
+        /*list_iterator it = my_special_find(value.first, current_hash);
+        if (it == _list.end() || it->cached != current_hash)
+            it = _buckets[current_hash];
+        else
+            return {it, false};
+
+        if (it == _list.end()) {
+            _list.push_back(value);
+            _buckets[current_hash] = --_list.end();
+        } else if (it == _list.begin()) {
+            _list.push_front(value);
+            _buckets[current_hash] = _list.begin();
+        } else
+            _buckets[current_hash] = _list.insert(it, value);
+        return {_buckets[current_hash], true};*/
     }
     std::pair<iterator, bool> insert(NodeType&& value) {
         if (max_size() < size())
             rehash(_buckets.size());
         uint64_t current_hash = Hash()(value.first) % _buckets.size();
         return insert(std::move(Node(std::move(value), current_hash)));
+        /*
+        list_iterator it = my_special_find(value.first, current_hash);
+        if (it == _list.end() || it->cached != current_hash)
+            it = _buckets[current_hash];
+        else
+            return {it, false};
+
+        if (it == _list.end()) {
+            _list.push_back(std::move(value));
+            _buckets[current_hash] = --_list.end();
+        } else if (it == _list.begin()) {
+            _list.push_front(std::move(value));
+            _buckets[current_hash] = _list.begin();
+        } else
+            _buckets[current_hash] = _list.insert(it, std::move(value));
+        return {_buckets[current_hash], true};*/
     }
     template <typename InputIterator>
     void insert(const InputIterator& first, const InputIterator& second) {
@@ -631,6 +673,9 @@ public:
 
     template <typename... Args>
     std::pair<iterator, bool> emplace(Args&&... args) {
+        /*NodeType* x = std::allocator_traits<Alloc>::allocate(typename std::allocator_traits<allocator_type>::template rebind_alloc<Alloc>(_allocator), 1);
+        std::allocator_traits<Alloc>::construct(typename std::allocator_traits<allocator_type>::template rebind_alloc<Alloc>(_allocator), x, std::forward<Args>(args)...);
+        */
         Node* x = AllocTraits::allocate(_allocator, 1);
         std::allocator_traits<Alloc>::construct(_NTallocator, &(x->data), std::forward<Args>(args)...);
         x->cached = Hash()(x->data.first) % _buckets.size();
@@ -741,6 +786,14 @@ private:
             _buckets[current_hash] = _list.insert(it, std::move(value));
         return {_buckets[current_hash], true};
     }
+    /*list_iterator my_special_find(const NodeType& value, int64_t& current_hash) const {
+        current_hash = static_cast<int64_t>(Hash()(value.first)) % _bucket_count;
+        list_const_iterator it = _buckets[current_hash];
+        while (it != _list.end() && it->cached == current_hash && !Equal()(it->data.first, value.first)) {
+            ++it;
+        }
+        return static_cast<list_iterator>(it);
+    }*/
     list_iterator my_special_find(const Key& key, uint64_t current_hash) const {
         list_const_iterator it = _buckets[current_hash];
         while (it != _list.end() && it->cached == current_hash && !Equal()(it->data.first, key)) {
